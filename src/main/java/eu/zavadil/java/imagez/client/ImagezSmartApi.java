@@ -16,4 +16,7 @@ public interface ImagezSmartApi {
 
 	URL getImageUrlResized(String name, ResizeRequest resizeRequest);
 
+	URL getRemovedBackgroundUrl(String name, String hex, Integer threshold);
+
+	ColorHexPayload guessBackgroundColor(String name);
 }

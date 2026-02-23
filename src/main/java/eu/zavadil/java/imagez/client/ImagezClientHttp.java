@@ -3,6 +3,7 @@ package eu.zavadil.java.imagez.client;
 import eu.zavadil.java.UrlBuilder;
 import eu.zavadil.java.spring.common.client.HttpApiClientBase;
 import eu.zavadil.java.util.HashUtils;
+import eu.zavadil.java.util.IntegerUtils;
 import eu.zavadil.java.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,6 +75,13 @@ public class ImagezClientHttp extends HttpApiClientBase implements ImagezSmartAp
 		);
 	}
 
+	public void deleteOriginal(String name) {
+		this.delete(
+			String.format("original/%s", name),
+			new UrlBuilder().addQuery("token", this.secretToken).getQueryParams()
+		);
+	}
+
 	@Override
 	public URL getImageUrlOriginal(String name) {
 		return UrlBuilder.of(this.baseUrl).addPath("original").addPath(name).build();
@@ -115,12 +123,32 @@ public class ImagezClientHttp extends HttpApiClientBase implements ImagezSmartAp
 		return builder.addQuery("token", token).build();
 	}
 
-	public void deleteOriginal(String name) {
-		this.delete(
-			String.format("original/%s", name),
-			new UrlBuilder()
-				.addQuery("token", this.secretToken)
-				.getQueryParams()
+	@Override
+	public URL getRemovedBackgroundUrl(String name, String hex, Integer threshold) {
+		UrlBuilder builder = UrlBuilder
+			.of(this.baseUrl)
+			.addPath("colors")
+			.addPath("remove-background")
+			.addPath(name);
+		String tokenRaw = String.format("%s-%s", this.secretToken, name);
+		if (StringUtils.notBlank(hex)) {
+			builder.addQuery("hex", hex);
+			tokenRaw = String.format("%s-%s", tokenRaw, hex);
+		}
+		if (threshold != null) {
+			builder.addQuery("threshold", threshold.toString());
+			tokenRaw = String.format("%s-%d", tokenRaw, threshold);
+		}
+		String token = HashUtils.crc32Hex(tokenRaw);
+		return builder.addQuery("token", token).build();
+	}
+
+	@Override
+	public ColorHexPayload guessBackgroundColor(String name) {
+		return this.get(
+			String.format("colors/guess-background/%s", name),
+			new UrlBuilder().addQuery("token", this.secretToken).getQueryParams(),
+			ColorHexPayload.class
 		);
 	}
 }
